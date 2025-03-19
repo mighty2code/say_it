@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "460065792056",
+    "project_id": "firechatapp-678f8",
+    "storage_bucket": "firechatapp-678f8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:460065792056:android:6f1e7004691324699986cd",
+        "android_client_info": {
+          "package_name": "com.example.chat_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB4GG6ydqgLCYsCKSJC_OSMusr-miDe96c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
