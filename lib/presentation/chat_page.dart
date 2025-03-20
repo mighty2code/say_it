@@ -1,14 +1,14 @@
 
-// import 'package:agora_chat_sdk/agora_chat_sdk.dart';
 import 'package:chat_app/constants/app_colors.dart';
 import 'package:chat_app/constants/constants.dart';
 import 'package:chat_app/constants/date_formats.dart';
 import 'package:chat_app/data/local/shared_prefs.dart';
 import 'package:chat_app/data/models/chat_message.dart';
-import 'package:chat_app/data/models/firebase_user.dart';
+import 'package:chat_app/data/models/friend.dart';
 import 'package:chat_app/data/remote/firebase/firebase_client.dart';
 import 'package:chat_app/utils/extensions.dart';
 import 'package:chat_app/widgets/input_text_feild.dart';
+import 'package:firebase_database/ui/firebase_animated_list.dart';
 import 'package:flutter/material.dart';
 
 class ChatPage extends StatefulWidget {
@@ -17,7 +17,7 @@ class ChatPage extends StatefulWidget {
     required this.receiver,
   });
 
-  final FirebaseUser receiver;
+  final Friend receiver;
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -30,13 +30,14 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
-    FirebaseClient.setChatListener((message) => chatListener(message));
-    FirebaseClient.addChatListener();
-    FirebaseClient.loadChatHistory(widget.receiver.id!).then((chatHistory) {
-      setState(() {
-        chatMessages.addAll(chatHistory);
-      });
-    });
+    
+    // FirebaseClient.listenChatStream(onMessage: (message) => chatListener(message), reciever: widget.receiver);
+    // FirebaseClient.addChatListener();
+    // FirebaseClient.loadChatHistory(widget.receiver.id!).then((chatHistory) {
+    //   setState(() {
+    //     chatMessages.addAll(chatHistory);
+    //   });
+    // });
   }
 
   @override
@@ -59,49 +60,98 @@ class _ChatPageState extends State<ChatPage> {
         mainAxisSize: MainAxisSize.max,
         children: [
           Flexible(
-            child: ListView.builder(
+            child: FirebaseAnimatedList(
+              shrinkWrap: true,
               padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
               controller: scrollController,
-              itemBuilder: (_, index) {
-                bool isReciever = chatMessages[index].from == widget.receiver.username;
-                bool isSender = chatMessages[index].from == SharedPrefs.getString(SharedPrefsKeys.username);
+          query: FirebaseClient.getChatStream(reciever : widget.receiver), itemBuilder: (context, snap, animation, index) {
+                final rawChatMap = snap.value as Map<Object?, Object?>;
+                final chatMap = rawChatMap.map((key, val) => MapEntry(key.toString(), val));
+                ChatMessage chatMessage = ChatMessage.fromJson(chatMap); //chatMessages[index]
 
-                return Row(
-                  mainAxisAlignment: isReciever ? MainAxisAlignment.start : isSender ? MainAxisAlignment.end : MainAxisAlignment.center,
-                  children: [
-                    Card(
-                      color: isReciever ? AppColors.white : isSender ? AppColors.appColor : AppColors.blue.shade300,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.only(
-                          topLeft: const Radius.circular(15),
-                          topRight: const Radius.circular(15),
-                          bottomLeft: isSender ? const Radius.circular(15) : Radius.zero,
-                          bottomRight: isReciever ? const Radius.circular(15) : Radius.zero,
+                bool isReciever = chatMessage.from == widget.receiver.username;
+                  bool isSender = chatMessage.from == SharedPrefs.getString(SharedPrefsKeys.username);
+            
+                  return Row(
+                    mainAxisAlignment: isReciever ? MainAxisAlignment.start : isSender ? MainAxisAlignment.end : MainAxisAlignment.center,
+                    children: [
+                      Card(
+                        color: isReciever ? AppColors.white : isSender ? AppColors.appColor : AppColors.blue.shade300,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.only(
+                            topLeft: const Radius.circular(15),
+                            topRight: const Radius.circular(15),
+                            bottomLeft: isSender ? const Radius.circular(15) : Radius.zero,
+                            bottomRight: isReciever ? const Radius.circular(15) : Radius.zero,
+                          ),
                         ),
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.only(top: 6, bottom: 6, left: isSender ? 15 : 12, right: isReciever ? 15 : 12),
-                        child: Column(
-                          crossAxisAlignment: isReciever ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              chatMessages[index].message,
-                              style: TextStyle(color: isReciever ? AppColors.black : AppColors.white, fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              DateTime.fromMillisecondsSinceEpoch(chatMessages[index].createdAt).toDateString(DateFormats.hhmma),
-                              style: TextStyle(fontSize: 9, color: isReciever ? AppColors.black : AppColors.white),
-                            ),
-                          ],
-                        ),
-                      )),
-                  ],
-                );
-              },
-              itemCount: chatMessages.length,
-            ),
+                        child: Padding(
+                          padding: EdgeInsets.only(top: 6, bottom: 6, left: isSender ? 15 : 12, right: isReciever ? 15 : 12),
+                          child: Column(
+                            crossAxisAlignment: isReciever ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                chatMessage.message,
+                                style: TextStyle(color: isReciever ? AppColors.black : AppColors.white, fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                chatMessage.createdAt?.toDateString(DateFormats.hhmma) ?? '',
+                                style: TextStyle(fontSize: 9, color: isReciever ? AppColors.black : AppColors.white),
+                              ),
+                            ],
+                          ),
+                        )),
+                    ],
+                  );
+                
+            }),
           ),
+
+          // Flexible(
+          //   child: ListView.builder(
+          //     padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+          //     controller: scrollController,
+          //     itemBuilder: (_, index) {
+          //       bool isReciever = chatMessages[index].from == widget.receiver.username;
+          //       bool isSender = chatMessages[index].from == SharedPrefs.getString(SharedPrefsKeys.username);
+
+          //       return Row(
+          //         mainAxisAlignment: isReciever ? MainAxisAlignment.start : isSender ? MainAxisAlignment.end : MainAxisAlignment.center,
+          //         children: [
+          //           Card(
+          //             color: isReciever ? AppColors.white : isSender ? AppColors.appColor : AppColors.blue.shade300,
+          //             shape: RoundedRectangleBorder(
+          //               borderRadius: BorderRadius.only(
+          //                 topLeft: const Radius.circular(15),
+          //                 topRight: const Radius.circular(15),
+          //                 bottomLeft: isSender ? const Radius.circular(15) : Radius.zero,
+          //                 bottomRight: isReciever ? const Radius.circular(15) : Radius.zero,
+          //               ),
+          //             ),
+          //             child: Padding(
+          //               padding: EdgeInsets.only(top: 6, bottom: 6, left: isSender ? 15 : 12, right: isReciever ? 15 : 12),
+          //               child: Column(
+          //                 crossAxisAlignment: isReciever ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+          //                 children: [
+          //                   Text(
+          //                     chatMessages[index].message,
+          //                     style: TextStyle(color: isReciever ? AppColors.black : AppColors.white, fontWeight: FontWeight.w600),
+          //                   ),
+          //                   const SizedBox(height: 4),
+          //                   Text(
+          //                     chatMessages[index].createdAt?.toDateString(DateFormats.hhmma) ?? '',
+          //                     style: TextStyle(fontSize: 9, color: isReciever ? AppColors.black : AppColors.white),
+          //                   ),
+          //                 ],
+          //               ),
+          //             )),
+          //         ],
+          //       );
+          //     },
+          //     itemCount: chatMessages.length,
+          //   ),
+          // ),
         ],
       ),
 
@@ -118,7 +168,7 @@ class _ChatPageState extends State<ChatPage> {
             const SizedBox(width: 12),
             InkWell(
               onTap: () {
-                FirebaseClient.sendMessage(chatId: widget.receiver.id ?? '', message: messageController.text, onSend: (message) {
+                FirebaseClient.sendMessage(reciever: widget.receiver, message: messageController.text, onSend: (message) {
                   chatListener(message);
                 });
                 messageController.clear();
@@ -134,7 +184,7 @@ class _ChatPageState extends State<ChatPage> {
   void chatListener(ChatMessage message) {
     chatMessages.add(message);
     setState(() {
-      scrollController.jumpTo(scrollController.position.maxScrollExtent + 50);
+      scrollController.jumpTo(scrollController.position.maxScrollExtent);
     });
   }
 }

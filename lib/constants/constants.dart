@@ -12,6 +12,16 @@ class SharedPrefsKeys {
   static const firebaseId = 'firebaseId';
 }
 
+class MessageType {
+  static const text = 'text';
+}
+
+class FirebaseCollection {
+  static const users = 'users';
+  static const friends = 'friends';
+  static const chat = 'chat';
+}
+
 enum EntityType {
   file, directory
 }

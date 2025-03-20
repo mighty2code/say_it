@@ -1,6 +1,6 @@
 import 'package:chat_app/constants/app_colors.dart';
 import 'package:chat_app/constants/app_routes.dart';
-import 'package:chat_app/data/models/firebase_auth_status.dart';
+import 'package:chat_app/data/models/firebase_status.dart';
 import 'package:chat_app/data/models/firebase_user.dart';
 import 'package:chat_app/data/remote/firebase/firebase_client.dart';
 import 'package:chat_app/presentation/auth/signup_screen.dart';

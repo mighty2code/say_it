@@ -1,8 +1,10 @@
 import 'package:chat_app/constants/constants.dart';
 import 'package:chat_app/data/local/shared_prefs.dart';
 import 'package:chat_app/data/models/chat_message.dart';
-import 'package:chat_app/data/models/firebase_auth_status.dart';
+import 'package:chat_app/data/models/firebase_status.dart';
 import 'package:chat_app/data/models/firebase_user.dart';
+import 'package:chat_app/data/models/friend.dart';
+import 'package:chat_app/data/models/friend_request_status.dart';
 import 'package:chat_app/firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -12,6 +14,7 @@ import 'package:flutter/material.dart';
 class FirebaseClient {
   static FirebaseDatabase database = FirebaseDatabase.instance;
   static List<FirebaseUser> allUsers = [];
+  static List<Friend> allFriends = [];
 
   static Function(ChatMessage message) listener = (message) {
     debugPrint("$currentTimeStamp: $message");
@@ -41,14 +44,11 @@ class FirebaseClient {
         password: user.password!,
       );
       final firebaseId = credential.user?.uid ?? '';
-      user.id = firebaseId;
-      SharedPrefs.setString(SharedPrefsKeys.firebaseId, firebaseId);
-      SharedPrefs.setBool(SharedPrefsKeys.isLoggedIn, true);
-      SharedPrefs.setString(SharedPrefsKeys.email, user.email!);
-      final userData =  await getLoggedUserData();
+      final userData =  await getLoggedUserData(firebaseID: firebaseId);
       if(userData != null) {
         saveUserData(userData);
       }
+      saveUserData(user);
       debugPrint('DebugX: Firebase Login Successful, Firebase logged email- (${user.email}) FirebaseId- ($firebaseId)');
       return FirebaseAuthStatus(isSuccess: true, message: 'Login Successful');
     } on FirebaseAuthException catch (e) {
@@ -78,8 +78,6 @@ class FirebaseClient {
       final firebaseId = credential.user?.uid ?? '';
       
       user.id = firebaseId;
-      SharedPrefs.setString(SharedPrefsKeys.firebaseId, firebaseId);
-      SharedPrefs.setBool(SharedPrefsKeys.isLoggedIn, true);
       saveUserData(user);
       addNewUser(user);
 
@@ -103,6 +101,7 @@ class FirebaseClient {
   }
 
   static void saveUserData(FirebaseUser user) {
+    SharedPrefs.setBool(SharedPrefsKeys.isLoggedIn, true);
     if(user.id != null) {
       SharedPrefs.setString(SharedPrefsKeys.firebaseId, user.id!);
     }
@@ -225,20 +224,75 @@ class FirebaseClient {
     }
   }
 
-  static void sendMessage({required String chatId, required String message, Function(ChatMessage message)? onSend}) async {
-    // if (chatId.isEmpty) {
-    //   debugPrint("single chat id or message content is null");
-    //   return;
-    // }
+  static Future<FirebaseStatus> sendMessage({required Friend reciever, required String message, Function(ChatMessage message)? onSend}) async {
+    if (reciever.id == null || reciever.id!.isEmpty) {
+      debugPrint("Reciever Id is Empty");
+      return FirebaseStatus(isSuccess: false, message: 'Error: Reciever Id is Empty');
+    }
+    String senderId = SharedPrefs.getString(SharedPrefsKeys.firebaseId) ?? '';
+    String? senderUserName = SharedPrefs.getString(SharedPrefsKeys.username);
 
-    // var msg = ChatMessage.createTxtSendMessage(
-    //   targetId: chatId,
-    //   content: message,
-    // );
+    if (senderId.isEmpty) {
+      debugPrint("Sender Id is Empty");
+      return FirebaseStatus(isSuccess: false, message: 'Error: Sender Id is Empty');
+    }
 
-    // onSend?.call(msg);
+    var msg = ChatMessage(
+      senderKey: senderId,
+      recieverKey: reciever.id!,
+      message: message,
+      messageType: MessageType.text, 
+      from: senderUserName,
+      to: reciever.username
+    );
+    final key = database
+        .ref(FirebaseCollection.chat)
+        .child(senderId)
+        .child(reciever.id!)
+        .child('messages').push().key ?? '';
     
-    // ChatClient.getInstance.chatManager.sendMessage(msg);
+    if(key.isEmpty) return FirebaseStatus(isSuccess: false, message: 'Error: Push Key is Empty');
+
+    await database
+      .ref(FirebaseCollection.chat)
+      .child(senderId)
+      .child(reciever.id!)
+      .child('messages')
+      .child(key)
+      .set(msg.toJson());
+
+    onSend?.call(msg);
+    return FirebaseStatus(isSuccess: false, message: 'Messege send Successfully');
+  }
+
+  static listenChatStream({required FirebaseUser reciever, required Function(ChatMessage message) onMessage}) {
+    // getChatStream(reciever: reciever).listen((event) {
+    //   final rawMap = event.snapshot.value as Map<Object?, Object?>;
+    //   final rawChatMap = rawMap.values.elementAt(0) as Map<Object?, Object?>;
+    //   final chatMap = rawChatMap.map((key, val) => MapEntry(key.toString(), val));
+    //   ChatMessage chatMessage = ChatMessage.fromJson(chatMap);
+    //   onMessage.call(chatMessage);
+    // });
+  }
+
+  static Query getChatStream({required Friend reciever})  {
+    if (reciever.id == null || reciever.id!.isEmpty) {
+      debugPrint("Reciever Id is Empty");
+      // yield* Stream.error(FirebaseStatus(isSuccess: false, message: 'Error: Reciever Id is Empty'));
+    }
+    String senderId = SharedPrefs.getString(SharedPrefsKeys.firebaseId) ?? '';
+
+    if (senderId.isEmpty) {
+      debugPrint("Sender Id is Empty");
+      // yield* Stream.error(FirebaseStatus(isSuccess: false, message: 'Error: Sender Id is Empty'));
+    }
+    
+    return database
+      .ref(FirebaseCollection.chat)
+      .child(senderId)
+      .child(reciever.id!)
+      .child('messages')
+      .orderByKey();
   }
 
   /// Loads chat history for a given conversation.
@@ -265,11 +319,11 @@ class FirebaseClient {
     return DateTime.now().toString().split(".").first;
   }
   
-  static void addNewUser(FirebaseUser user) {
+  static void addNewUser(FirebaseUser user) async {
     String? firebaseID = SharedPrefs.getString(SharedPrefsKeys.firebaseId);
     if(firebaseID == null) return;
     try {
-      database
+      await database
         .ref(FirebaseCollection.users)
         .child(firebaseID)
         .set(user.toJson());
@@ -278,9 +332,7 @@ class FirebaseClient {
     }
   }
 
-  static Future<FirebaseUser?> getLoggedUserData() async {
-    String? firebaseID = SharedPrefs.getString(SharedPrefsKeys.firebaseId);
-    if(firebaseID == null) return null;
+  static Future<FirebaseUser?> getLoggedUserData({required String firebaseID}) async {
     try {
       final data = await database
         .ref(FirebaseCollection.users)
@@ -288,6 +340,7 @@ class FirebaseClient {
         .get();
       final value = data.value as Map<Object?, Object?>;
       final userMap = value.map((key, val) => MapEntry(key.toString(), val));
+      userMap['id'] = firebaseID;
       return FirebaseUser.fromJson(userMap);
     } on Exception catch (e) {
       debugPrint('DebugX: Exception: $e');
@@ -300,6 +353,7 @@ class FirebaseClient {
       final snapshot = await database
         .ref(FirebaseCollection.users)
         .get();
+      if(snapshot.value == null) return [];
       final value = snapshot.value as Map<Object?, Object?>;
       final allUserMap = value.map((key, val) => MapEntry(key.toString(), val));
       allUsers = [];
@@ -312,13 +366,107 @@ class FirebaseClient {
           allUsers.add(user);
         }
       }
-      debugPrint('DebugX: Message fetched successfully');
+      debugPrint('DebugX: All Users fetched successfully');
       return allUsers;
     } on Exception catch (e) {
       debugPrint('DebugX: Exception: $e');
       return allUsers;
     }
   }
+
+  static Future<FirebaseStatus> addFriend(FirebaseUser firebaseUser, {bool acceptRequest = false}) async {
+    try {
+      String? firebaseID = SharedPrefs.getString(SharedPrefsKeys.firebaseId);
+      if(firebaseID == null || firebaseUser.id == null) return FirebaseStatus(isSuccess: false, message: 'Error: Invalid Credentials');
+
+      final conversationId = database
+        .ref(FirebaseCollection.friends)
+        .push()
+        .key ?? '';
+      
+      await database
+        .ref(FirebaseCollection.friends)
+        .child(firebaseID)
+        .child(firebaseUser.id!)
+        .set({
+          'conversation_id' : conversationId,
+          'request_status': acceptRequest ? FriendRequestStatus.accepted : FriendRequestStatus.pending
+        });
+      
+      await database
+        .ref(FirebaseCollection.friends)
+        .child(firebaseUser.id!)
+        .child(firebaseID)
+        .set({
+          'conversation_id' : conversationId,
+          'request_status':  acceptRequest ? FriendRequestStatus.accepted : FriendRequestStatus.recieved
+        });
+      
+      debugPrint('DebugX: Friend Added successfully - User : $firebaseUser');
+      return FirebaseStatus(isSuccess: true, message: 'Friend Added successfully');
+    } on Exception catch (e) {
+      debugPrint('DebugX: Exception: $e');
+      return FirebaseStatus(isSuccess: false, message: 'Exception: $e');
+    }
+  }
+
+  static Future<List<Friend>> getAllFriends() async {
+    try {
+      String? firebaseID = SharedPrefs.getString(SharedPrefsKeys.firebaseId);
+      if(firebaseID == null) return [];
+
+      final snapshot = await database
+        .ref(FirebaseCollection.friends)
+        .child(firebaseID)
+        .get();
+      if(snapshot.value == null) return [];
+
+      final value = snapshot.value as Map<Object?, Object?>;
+      final allFriendsMap = value.map((key, val) => MapEntry(key.toString(), val));
+      allFriends = [];
+      for (var user in allUsers) {
+        if(allFriendsMap.containsKey(user.id)) {
+          final friendRawMap = allFriendsMap[user.id] as Map<Object?, Object?>;
+          final friendMap = friendRawMap.map((key, val) => MapEntry(key.toString(), val));
+          allFriends.add(Friend.fromJson({...user.toJson() , ...friendMap}));
+        }
+      }
+      debugPrint('DebugX: Friend List fetched successfully');
+      return allFriends;
+    } on Exception catch (e) {
+      debugPrint('DebugX: Exception: $e');
+      return allFriends;
+    }
+  }
+
+  //   static Future<List<Friend>> getFriendRequests() async {
+  //   try {
+  //     String? firebaseID = SharedPrefs.getString(SharedPrefsKeys.firebaseId);
+  //     if(firebaseID == null) return [];
+
+  //     final snapshot = await database
+  //       .ref(FirebaseCollection.friends)
+  //       .child(firebaseID)
+  //       .get();
+  //     if(snapshot.value == null) return [];
+
+  //     final value = snapshot.value as Map<Object?, Object?>;
+  //     final allFriendRequestsMap = value.map((key, val) => MapEntry(key.toString(), val));
+  //     allFriends = [];
+  //     for (var user in allUsers) {
+  //       if(allFriendRequestsMap.containsKey(user.id)) {
+  //         final friendRawMap = allFriendRequestsMap[user.id] as Map<Object?, Object?>;
+  //         final friendMap = friendRawMap.map((key, val) => MapEntry(key.toString(), val));
+  //         allFriends.add(Friend.fromJson({...user.toJson() , ...friendMap}));
+  //       }
+  //     }
+  //     debugPrint('DebugX: Friend List fetched successfully');
+  //     return allFriends;
+  //   } on Exception catch (e) {
+  //     debugPrint('DebugX: Exception: $e');
+  //     return allFriends;
+  //   }
+  // }
 
   // static void getMsgList() {
   //   try {
@@ -332,22 +480,17 @@ class FirebaseClient {
   //   }
   // }
 
-  static void sendDummyMessage() {
-    try {
-      final key = database.ref(FirebaseCollection.messagesTable).push().key ?? '';
-      if (key.isNotEmpty) {
-        database.ref(FirebaseCollection.messagesTable)
-            .child(key)
-            .set({"Position": "Flutter2"});
-      }
+  // static void sendDummyMessage() {
+  //   try {
+  //     final key = database.ref(FirebaseCollection.messagesTable).push().key ?? '';
+  //     if (key.isNotEmpty) {
+  //       database.ref(FirebaseCollection.messagesTable)
+  //           .child(key)
+  //           .set({"Position": "Flutter2"});
+  //     }
       
-    } on Exception catch (e) {
-      debugPrint('DebugX: Exception: $e');
-    }
-  }
-}
-
-class FirebaseCollection {
-  static const users = 'users';
-  static const messagesTable = 'friends';
+  //   } on Exception catch (e) {
+  //     debugPrint('DebugX: Exception: $e');
+  //   }
+  // }
 }
