@@ -1,3 +1,3 @@
-# chat_app
+# say_it
 
-A new Flutter project.
+A Chating Application

@@ -1,6 +1,6 @@
 
-import 'package:chat_app/constants/app_colors.dart';
-import 'package:chat_app/widgets/input_text_feild.dart';
+import 'package:say_it/constants/app_colors.dart';
+import 'package:say_it/widgets/input_text_feild.dart';
 import 'package:flutter/material.dart';
 
 class DialogUtils {

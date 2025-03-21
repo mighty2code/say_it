@@ -1,9 +1,9 @@
-import 'package:chat_app/constants/app_colors.dart';
-import 'package:chat_app/constants/app_routes.dart';
-import 'package:chat_app/constants/constants.dart';
-import 'package:chat_app/data/local/shared_prefs.dart';
-import 'package:chat_app/presentation/auth/login_screen.dart';
-import 'package:chat_app/presentation/homepage.dart';
+import 'package:say_it/constants/app_colors.dart';
+import 'package:say_it/constants/app_routes.dart';
+import 'package:say_it/constants/constants.dart';
+import 'package:say_it/data/local/shared_prefs.dart';
+import 'package:say_it/presentation/auth/login_screen.dart';
+import 'package:say_it/presentation/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

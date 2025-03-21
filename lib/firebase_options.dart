@@ -63,7 +63,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '460065792056',
     projectId: 'firechatapp-678f8',
     storageBucket: 'firechatapp-678f8.firebasestorage.app',
-    iosBundleId: 'com.example.chatApp',
+    iosBundleId: 'com.finedev.chatApp',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -72,7 +72,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '460065792056',
     projectId: 'firechatapp-678f8',
     storageBucket: 'firechatapp-678f8.firebasestorage.app',
-    iosBundleId: 'com.example.chatApp',
+    iosBundleId: 'com.finedev.chatApp',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

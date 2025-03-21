@@ -1,4 +1,4 @@
-import 'package:chat_app/constants/app_colors.dart';
+import 'package:say_it/constants/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class InputTextField extends StatelessWidget {

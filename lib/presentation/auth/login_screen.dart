@@ -1,11 +1,11 @@
-import 'package:chat_app/constants/app_colors.dart';
-import 'package:chat_app/constants/app_routes.dart';
-import 'package:chat_app/data/models/firebase_status.dart';
-import 'package:chat_app/data/models/firebase_user.dart';
-import 'package:chat_app/data/remote/firebase/firebase_client.dart';
-import 'package:chat_app/presentation/auth/signup_screen.dart';
-import 'package:chat_app/utils/info_utils.dart';
-import 'package:chat_app/widgets/input_text_feild.dart';
+import 'package:say_it/constants/app_colors.dart';
+import 'package:say_it/constants/app_routes.dart';
+import 'package:say_it/data/models/firebase_status.dart';
+import 'package:say_it/data/models/firebase_user.dart';
+import 'package:say_it/data/remote/firebase/firebase_client.dart';
+import 'package:say_it/presentation/auth/signup_screen.dart';
+import 'package:say_it/utils/info_utils.dart';
+import 'package:say_it/widgets/input_text_feild.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

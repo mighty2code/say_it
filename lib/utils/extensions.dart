@@ -1,4 +1,4 @@
-import 'package:chat_app/constants/date_formats.dart';
+import 'package:say_it/constants/date_formats.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 

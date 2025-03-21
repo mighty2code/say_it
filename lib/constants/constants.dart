@@ -1,6 +1,6 @@
 class AppConfig {
   static const appVersion = 1.0;
-  static const name = 'WhatsApp';
+  static const name = 'SayIt';
 }
 
 class SharedPrefsKeys {

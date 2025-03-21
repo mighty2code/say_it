@@ -1,14 +1,14 @@
 
-import 'package:chat_app/constants/app_colors.dart';
-import 'package:chat_app/constants/constants.dart';
-import 'package:chat_app/constants/date_formats.dart';
-import 'package:chat_app/data/local/shared_prefs.dart';
-import 'package:chat_app/data/models/chat_message.dart';
-import 'package:chat_app/data/models/friend.dart';
-import 'package:chat_app/data/remote/firebase/firebase_client.dart';
-import 'package:chat_app/utils/extensions.dart';
-import 'package:chat_app/utils/map_utils.dart';
-import 'package:chat_app/widgets/input_text_feild.dart';
+import 'package:say_it/constants/app_colors.dart';
+import 'package:say_it/constants/constants.dart';
+import 'package:say_it/constants/date_formats.dart';
+import 'package:say_it/data/local/shared_prefs.dart';
+import 'package:say_it/data/models/chat_message.dart';
+import 'package:say_it/data/models/friend.dart';
+import 'package:say_it/data/remote/firebase/firebase_client.dart';
+import 'package:say_it/utils/extensions.dart';
+import 'package:say_it/utils/map_utils.dart';
+import 'package:say_it/widgets/input_text_feild.dart';
 import 'package:firebase_database/ui/firebase_animated_list.dart';
 import 'package:flutter/material.dart';
 

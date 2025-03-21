@@ -1,7 +1,7 @@
-import 'package:chat_app/app_pages.dart';
-import 'package:chat_app/constants/app_routes.dart';
-import 'package:chat_app/data/local/shared_prefs.dart';
-import 'package:chat_app/data/remote/firebase/firebase_client.dart';
+import 'package:say_it/app_pages.dart';
+import 'package:say_it/constants/app_routes.dart';
+import 'package:say_it/data/local/shared_prefs.dart';
+import 'package:say_it/data/remote/firebase/firebase_client.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
