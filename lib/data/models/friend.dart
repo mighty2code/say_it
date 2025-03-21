@@ -7,6 +7,7 @@ class Friend {
   String? email;
   String? conversationId;
   String? friendRequestStatus;
+  int unreadCount;
 
   Friend({
     this.id,
@@ -14,7 +15,8 @@ class Friend {
     this.username,
     this.email,
     this.conversationId,
-    this.friendRequestStatus
+    this.friendRequestStatus,
+    this.unreadCount = 0
   });
 
   factory Friend.fromJson(Map<String, dynamic> json) {
@@ -25,6 +27,7 @@ class Friend {
       email: json['email']?.toString() ?? '',
       conversationId: json['conversation_id']?.toString() ?? '',
       friendRequestStatus: json['request_status']?.toString() ?? '',
+      unreadCount: json['unread_count'] ?? 0,
     );
   }
 
@@ -40,6 +43,7 @@ class Friend {
       'email': email,
       'conversation_id': conversationId,
       'request_status': friendRequestStatus,
+      'unread_count': unreadCount,
     };
   }
 }

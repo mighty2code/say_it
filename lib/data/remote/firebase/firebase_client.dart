@@ -6,6 +6,7 @@ import 'package:chat_app/data/models/firebase_user.dart';
 import 'package:chat_app/data/models/friend.dart';
 import 'package:chat_app/data/models/friend_request_status.dart';
 import 'package:chat_app/firebase_options.dart';
+import 'package:chat_app/utils/map_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -28,9 +29,7 @@ class FirebaseClient {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   }
 
-  static dispose() {
-    // ChatClient.getInstance.chatManager.removeEventHandler("UNIQUE_HANDLER_ID");
-  }
+  static dispose() {}
 
   static Future<bool> isLoggedIn() async {
     return FirebaseAuth.instance.currentUser !=  null;
@@ -128,29 +127,6 @@ class FirebaseClient {
       debugPrint('DebugX: Exception: $e');
       return FirebaseAuthStatus(isSuccess: false, message: 'Exception: $e');
     }
-  }
-
-  static void addChatListener() {
-    // ChatClient.getInstance.chatManager.addMessageEvent(
-    //     "UNIQUE_HANDLER_ID",
-    //     ChatMessageEvent(
-    //       onSuccess: (msgId, msg) {
-    //         debugPrint("send message succeed");
-    //       },
-    //       onProgress: (msgId, progress) {
-    //         debugPrint("send message succeed");
-    //       },
-    //       onError: (msgId, msg, error) {
-    //         debugPrint(
-    //           "send message failed, code: ${error.code}, desc: ${error.description}",
-    //         );
-    //       },
-    //     ));
-
-    // ChatClient.getInstance.chatManager.addEventHandler(
-    //   "UNIQUE_HANDLER_ID",
-    //   ChatEventHandler(onMessagesReceived: onMessagesReceived),
-    // );
   }
 
   static void onMessagesReceived(List<ChatMessage> messages) {
@@ -253,10 +229,13 @@ class FirebaseClient {
     
     if(key.isEmpty) return FirebaseStatus(isSuccess: false, message: 'Error: Push Key is Empty');
 
+    final unreadCount = await getUnreadCount(conversationId: reciever.conversationId, userId: senderId);
+
+    setUnreadCount(conversationId: reciever.conversationId, userId: senderId, count: unreadCount+1);
+
     await database
       .ref(FirebaseCollection.chat)
-      .child(senderId)
-      .child(reciever.id!)
+      .child(reciever.conversationId!)
       .child('messages')
       .child(key)
       .set(msg.toJson());
@@ -275,22 +254,15 @@ class FirebaseClient {
     // });
   }
 
-  static Query getChatStream({required Friend reciever})  {
-    if (reciever.id == null || reciever.id!.isEmpty) {
-      debugPrint("Reciever Id is Empty");
+  static Query getChatStream({required String conversationId})  {
+    if (conversationId.isEmpty) {
+      debugPrint("conversationId is Empty");
       // yield* Stream.error(FirebaseStatus(isSuccess: false, message: 'Error: Reciever Id is Empty'));
     }
-    String senderId = SharedPrefs.getString(SharedPrefsKeys.firebaseId) ?? '';
 
-    if (senderId.isEmpty) {
-      debugPrint("Sender Id is Empty");
-      // yield* Stream.error(FirebaseStatus(isSuccess: false, message: 'Error: Sender Id is Empty'));
-    }
-    
     return database
       .ref(FirebaseCollection.chat)
-      .child(senderId)
-      .child(reciever.id!)
+      .child(conversationId)
       .child('messages')
       .orderByKey();
   }
@@ -338,8 +310,7 @@ class FirebaseClient {
         .ref(FirebaseCollection.users)
         .child(firebaseID)
         .get();
-      final value = data.value as Map<Object?, Object?>;
-      final userMap = value.map((key, val) => MapEntry(key.toString(), val));
+      final userMap = MapUtils.rawMapToMapStringDynamic(data.value);
       userMap['id'] = firebaseID;
       return FirebaseUser.fromJson(userMap);
     } on Exception catch (e) {
@@ -354,13 +325,11 @@ class FirebaseClient {
         .ref(FirebaseCollection.users)
         .get();
       if(snapshot.value == null) return [];
-      final value = snapshot.value as Map<Object?, Object?>;
-      final allUserMap = value.map((key, val) => MapEntry(key.toString(), val));
+      final allUserMap = MapUtils.rawMapToMapStringDynamic(snapshot.value);
       allUsers = [];
       for (var firebaseId in allUserMap.keys) {
         if(allUserMap[firebaseId] != null) {
-          final rawMap = allUserMap[firebaseId] as Map<Object?, Object?>;
-          final userMap = rawMap.map((key, val) => MapEntry(key.toString(), val));
+          final userMap = MapUtils.rawMapToMapStringDynamic(allUserMap[firebaseId]);
           final user = FirebaseUser.fromJson(userMap);
           user.id = firebaseId;
           allUsers.add(user);
@@ -384,6 +353,7 @@ class FirebaseClient {
         .push()
         .key ?? '';
       
+      /// Adding Friend in Current User
       await database
         .ref(FirebaseCollection.friends)
         .child(firebaseID)
@@ -393,6 +363,7 @@ class FirebaseClient {
           'request_status': acceptRequest ? FriendRequestStatus.accepted : FriendRequestStatus.pending
         });
       
+      /// Adding Friend Request in Other User
       await database
         .ref(FirebaseCollection.friends)
         .child(firebaseUser.id!)
@@ -402,6 +373,15 @@ class FirebaseClient {
           'request_status':  acceptRequest ? FriendRequestStatus.accepted : FriendRequestStatus.recieved
         });
       
+      /// Adding Participant ids in the chat conversation
+      if(acceptRequest) {
+        await database
+        .ref(FirebaseCollection.chat)
+        .child(conversationId)
+        .child('participants')
+        .set([firebaseUser.id, firebaseID]);
+      }
+
       debugPrint('DebugX: Friend Added successfully - User : $firebaseUser');
       return FirebaseStatus(isSuccess: true, message: 'Friend Added successfully');
     } on Exception catch (e) {
@@ -421,14 +401,14 @@ class FirebaseClient {
         .get();
       if(snapshot.value == null) return [];
 
-      final value = snapshot.value as Map<Object?, Object?>;
-      final allFriendsMap = value.map((key, val) => MapEntry(key.toString(), val));
+      final allFriendsMap = MapUtils.rawMapToMapStringDynamic(snapshot.value);
       allFriends = [];
       for (var user in allUsers) {
         if(allFriendsMap.containsKey(user.id)) {
-          final friendRawMap = allFriendsMap[user.id] as Map<Object?, Object?>;
-          final friendMap = friendRawMap.map((key, val) => MapEntry(key.toString(), val));
-          allFriends.add(Friend.fromJson({...user.toJson() , ...friendMap}));
+          final friendMap = MapUtils.rawMapToMapStringDynamic(allFriendsMap[user.id]);
+          final friend = Friend.fromJson({...user.toJson() , ...friendMap});
+          friend.unreadCount = await getUnreadCount(conversationId: friend.conversationId, userId: friend.id);
+          allFriends.add(friend);
         }
       }
       debugPrint('DebugX: Friend List fetched successfully');
@@ -438,59 +418,26 @@ class FirebaseClient {
       return allFriends;
     }
   }
+  
+  static Future<int> getUnreadCount({required String? conversationId, required String? userId}) async {
+    if(conversationId == null || userId == null) return 0;
+    final count = await database
+      .ref(FirebaseCollection.chat)
+      .child(conversationId)
+      .child('inbox')
+      .child(userId)
+      .child('unread_count').get();
 
-  //   static Future<List<Friend>> getFriendRequests() async {
-  //   try {
-  //     String? firebaseID = SharedPrefs.getString(SharedPrefsKeys.firebaseId);
-  //     if(firebaseID == null) return [];
-
-  //     final snapshot = await database
-  //       .ref(FirebaseCollection.friends)
-  //       .child(firebaseID)
-  //       .get();
-  //     if(snapshot.value == null) return [];
-
-  //     final value = snapshot.value as Map<Object?, Object?>;
-  //     final allFriendRequestsMap = value.map((key, val) => MapEntry(key.toString(), val));
-  //     allFriends = [];
-  //     for (var user in allUsers) {
-  //       if(allFriendRequestsMap.containsKey(user.id)) {
-  //         final friendRawMap = allFriendRequestsMap[user.id] as Map<Object?, Object?>;
-  //         final friendMap = friendRawMap.map((key, val) => MapEntry(key.toString(), val));
-  //         allFriends.add(Friend.fromJson({...user.toJson() , ...friendMap}));
-  //       }
-  //     }
-  //     debugPrint('DebugX: Friend List fetched successfully');
-  //     return allFriends;
-  //   } on Exception catch (e) {
-  //     debugPrint('DebugX: Exception: $e');
-  //     return allFriends;
-  //   }
-  // }
-
-  // static void getMsgList() {
-  //   try {
-  //     database
-  //       .ref(FirebaseCollection.messagesTable)
-  //       .onValue.listen((event) {
-  //         debugPrint(event.snapshot.value.toString());
-  //       });
-  //   } on Exception catch (e) {
-  //     debugPrint('DebugX: Exception: $e');
-  //   }
-  // }
-
-  // static void sendDummyMessage() {
-  //   try {
-  //     final key = database.ref(FirebaseCollection.messagesTable).push().key ?? '';
-  //     if (key.isNotEmpty) {
-  //       database.ref(FirebaseCollection.messagesTable)
-  //           .child(key)
-  //           .set({"Position": "Flutter2"});
-  //     }
-      
-  //   } on Exception catch (e) {
-  //     debugPrint('DebugX: Exception: $e');
-  //   }
-  // }
+    return count.value != null ? count.value as int : 0;
+  }
+  
+  static void setUnreadCount({required String? conversationId, required String? userId, required int count}) async {
+    if(conversationId == null || userId == null) return;
+    await database
+      .ref(FirebaseCollection.chat)
+      .child(conversationId)
+      .child('inbox')
+      .child(userId)
+      .child('unread_count').set(count);
+  }
 }

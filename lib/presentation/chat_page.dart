@@ -7,6 +7,7 @@ import 'package:chat_app/data/models/chat_message.dart';
 import 'package:chat_app/data/models/friend.dart';
 import 'package:chat_app/data/remote/firebase/firebase_client.dart';
 import 'package:chat_app/utils/extensions.dart';
+import 'package:chat_app/utils/map_utils.dart';
 import 'package:chat_app/widgets/input_text_feild.dart';
 import 'package:firebase_database/ui/firebase_animated_list.dart';
 import 'package:flutter/material.dart';
@@ -64,11 +65,13 @@ class _ChatPageState extends State<ChatPage> {
               shrinkWrap: true,
               padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
               controller: scrollController,
-          query: FirebaseClient.getChatStream(reciever : widget.receiver), itemBuilder: (context, snap, animation, index) {
-                final rawChatMap = snap.value as Map<Object?, Object?>;
-                final chatMap = rawChatMap.map((key, val) => MapEntry(key.toString(), val));
-                ChatMessage chatMessage = ChatMessage.fromJson(chatMap); //chatMessages[index]
-
+              // sort: (a, b) {
+              //   ChatMessage aMsg = ChatMessage.fromJson(MapUtils.rawMapToMapStringDynamic(a.value));
+              //   ChatMessage bMsg = ChatMessage.fromJson(MapUtils.rawMapToMapStringDynamic(a.value));
+              //   return aMsg.createdAt!.compareTo(bMsg.createdAt!);
+              // },
+              query: FirebaseClient.getChatStream(conversationId : widget.receiver.conversationId ?? ''), itemBuilder: (context, snap, animation, index) {
+                ChatMessage chatMessage = ChatMessage.fromJson(MapUtils.rawMapToMapStringDynamic(snap.value));
                 bool isReciever = chatMessage.from == widget.receiver.username;
                   bool isSender = chatMessage.from == SharedPrefs.getString(SharedPrefsKeys.username);
             

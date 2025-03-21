@@ -74,7 +74,7 @@ class _HomePageState extends State<HomePage> {
             color: AppColors.appColor,
             onRefresh: () => Future.delayed(
               const Duration(seconds: 1), () {
-                  getAllFriends();
+                  initObjects();
                   debugPrint('DebugX: on refresh called [homepage.dart]');
                 }
               ),
@@ -85,12 +85,19 @@ class _HomePageState extends State<HomePage> {
                   final conversation = conversations[index];
                   return InkWell(
                     onTap: () {
+                      FirebaseClient.setUnreadCount(conversationId: conversation.conversationId, userId: conversation.id, count: 0);
+
                       Navigator.of(context).push(MaterialPageRoute(builder:(context) => ChatPage(receiver: conversation)));
                     },
                     child: Card(
                       child: ListTile(
                         leading: const Icon(Icons.person, color: AppColors.appColor),
                         title: Text(conversation.name ?? ''),
+                        trailing: conversation.unreadCount != 0 ? CircleAvatar(
+                          backgroundColor: AppColors.appColor,
+                          radius: 10,
+                          child: Text(conversation.unreadCount.toString(), style: const TextStyle(fontSize: 12, color: AppColors.white),),
+                        ) : null,
                       ),
                     )
                   );
@@ -163,7 +170,7 @@ class _HomePageState extends State<HomePage> {
           ),
                   ],
                 )
-              : const Expanded(child: Align(alignment: Alignment.center, child: CircularProgressIndicator(color: AppColors.appColor)));
+              : const Center(child: CircularProgressIndicator(color: AppColors.appColor));
             }
           );
           });
