@@ -1,3 +1,3 @@
 # say_it
 
-A Chating Application
+A Simple Chating Application
