@@ -1,3 +1,4 @@
+import 'package:say_it/app_router.dart';
 import 'package:say_it/constants/app_colors.dart';
 import 'package:say_it/constants/app_routes.dart';
 import 'package:say_it/data/models/firebase_status.dart';
@@ -6,7 +7,6 @@ import 'package:say_it/data/remote/firebase/firebase_client.dart';
 import 'package:say_it/utils/info_utils.dart';
 import 'package:say_it/widgets/input_text_feild.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 class SignUpScreen extends StatelessWidget {
   SignUpScreen({super.key});
@@ -102,8 +102,8 @@ class SignUpScreen extends StatelessWidget {
                     );
                       
                     if(status.isSuccess) {
-                      InfoUtils.showSnackbar('SignUp', status.message);
-                      Get.offAndToNamed(AppRoutes.homePage);
+                      InfoUtils.showSnackbar(title: 'SignUp', message: status.message);
+                      AppRouter.pushReplacementNamed(AppRoutes.homePage);
                     }
                   },
                   child: Card(

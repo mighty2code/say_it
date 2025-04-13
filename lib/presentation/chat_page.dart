@@ -1,4 +1,5 @@
 
+import 'package:say_it/app_router.dart';
 import 'package:say_it/constants/app_colors.dart';
 import 'package:say_it/constants/constants.dart';
 import 'package:say_it/constants/date_formats.dart';
@@ -15,21 +16,21 @@ import 'package:flutter/material.dart';
 class ChatPage extends StatefulWidget {
   const ChatPage({
     super.key,
-    required this.receiver,
   });
-
-  final Friend receiver;
 
   @override
   State<ChatPage> createState() => _ChatPageState();
 }
 class _ChatPageState extends State<ChatPage> {
+  Friend? receiver;
+
   ScrollController scrollController = ScrollController();
   TextEditingController messageController = TextEditingController();
   final List<ChatMessage> chatMessages = [];
 
   @override
   void initState() {
+    receiver = AppRouter.getArguments<Friend>();
     super.initState();
     
     // FirebaseClient.listenChatStream(onMessage: (message) => chatListener(message), reciever: widget.receiver);
@@ -53,7 +54,7 @@ class _ChatPageState extends State<ChatPage> {
       appBar: AppBar(
         iconTheme: const IconThemeData(color: AppColors.white),
         leadingWidth: 35,
-        title: Text(widget.receiver.name ?? '', style: const TextStyle(color: Colors.white)),
+        title: Text(receiver?.name ?? '', style: const TextStyle(color: Colors.white)),
         backgroundColor: AppColors.appColor,
       ),
       body: Column(
@@ -70,9 +71,9 @@ class _ChatPageState extends State<ChatPage> {
               //   ChatMessage bMsg = ChatMessage.fromJson(MapUtils.rawMapToMapStringDynamic(a.value));
               //   return aMsg.createdAt!.compareTo(bMsg.createdAt!);
               // },
-              query: FirebaseClient.getChatStream(conversationId : widget.receiver.conversationId ?? ''), itemBuilder: (context, snap, animation, index) {
+              query: FirebaseClient.getChatStream(conversationId : receiver?.conversationId ?? ''), itemBuilder: (context, snap, animation, index) {
                 ChatMessage chatMessage = ChatMessage.fromJson(MapUtils.rawMapToMapStringDynamic(snap.value));
-                bool isReciever = chatMessage.from == widget.receiver.username;
+                bool isReciever = chatMessage.from == receiver?.username;
                   bool isSender = chatMessage.from == SharedPrefs.getString(SharedPrefsKeys.username);
             
                   return Row(
@@ -171,7 +172,8 @@ class _ChatPageState extends State<ChatPage> {
             const SizedBox(width: 12),
             InkWell(
               onTap: () {
-                FirebaseClient.sendMessage(reciever: widget.receiver, message: messageController.text, onSend: (message) {
+                if(receiver == null) return;
+                FirebaseClient.sendMessage(reciever: receiver!, message: messageController.text, onSend: (message) {
                   chatListener(message);
                 });
                 messageController.clear();

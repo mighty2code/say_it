@@ -1,11 +1,9 @@
+import 'package:say_it/app_router.dart';
 import 'package:say_it/constants/app_colors.dart';
 import 'package:say_it/constants/app_routes.dart';
 import 'package:say_it/constants/constants.dart';
 import 'package:say_it/data/local/shared_prefs.dart';
-import 'package:say_it/presentation/auth/login_screen.dart';
-import 'package:say_it/presentation/homepage.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -20,9 +18,9 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     Future.delayed(const Duration(seconds: 2), () {
       if(SharedPrefs.getBool(SharedPrefsKeys.isLoggedIn) ?? false) {
-        Get.offAndToNamed(AppRoutes.homePage);
+        AppRouter.pushReplacementNamed(AppRoutes.homePage);
       } else {
-        Get.offAndToNamed(AppRoutes.login);
+        AppRouter.pushReplacementNamed(AppRoutes.login);
       }
     });
     super.initState();

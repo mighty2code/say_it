@@ -1,17 +1,17 @@
+import 'package:say_it/app_router.dart';
 import 'package:say_it/constants/app_routes.dart';
 import 'package:say_it/presentation/auth/login_screen.dart';
 import 'package:say_it/presentation/auth/signup_screen.dart';
 import 'package:say_it/presentation/chat_page.dart';
 import 'package:say_it/presentation/homepage.dart';
 import 'package:say_it/presentation/splash_screen.dart';
-import 'package:get/get.dart';
 
 class AppPages {
-  static List<GetPage> get list => [
-    GetPage(name: AppRoutes.splash, page: () => const SplashScreen()),
-    GetPage(name: AppRoutes.login, page: () => LoginScreen()),
-    GetPage(name: AppRoutes.signUp, page: () => SignUpScreen()),
-    GetPage(name: AppRoutes.homePage, page: () => const HomePage()),
-    // GetPage(name: AppRoutes.chat, page: () => const ChatPage()),
+  static List<AppPage> get list => [
+    AppPage(name: AppRoutes.splash, pageBuilder: (_) => const SplashScreen()),
+    AppPage(name: AppRoutes.login, pageBuilder: (_) => LoginScreen()),
+    AppPage(name: AppRoutes.signUp, pageBuilder: (_) => SignUpScreen()),
+    AppPage(name: AppRoutes.homePage, pageBuilder: (_) => const HomePage()),
+    AppPage(name: AppRoutes.chat, pageBuilder: (_) => const ChatPage()),
   ];
 }

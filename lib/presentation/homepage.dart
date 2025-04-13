@@ -1,6 +1,10 @@
 
 
+import 'package:flutter/cupertino.dart';
+import 'package:say_it/app_pages.dart';
+import 'package:say_it/app_router.dart';
 import 'package:say_it/constants/app_colors.dart';
+import 'package:say_it/constants/app_routes.dart';
 import 'package:say_it/constants/constants.dart';
 import 'package:say_it/data/local/shared_prefs.dart';
 import 'package:say_it/data/models/firebase_status.dart';
@@ -12,7 +16,6 @@ import 'package:say_it/presentation/auth/login_screen.dart';
 import 'package:say_it/presentation/chat_page.dart';
 import 'package:say_it/utils/info_utils.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -87,7 +90,7 @@ class _HomePageState extends State<HomePage> {
                     onTap: () {
                       FirebaseClient.setUnreadCount(conversationId: conversation.conversationId, userId: conversation.id, count: 0);
 
-                      Navigator.of(context).push(MaterialPageRoute(builder:(context) => ChatPage(receiver: conversation)));
+                      AppRouter.pushNamed(AppRoutes.chat, arguments: conversation);
                     },
                     child: Card(
                       child: ListTile(
@@ -108,7 +111,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-
+      drawer: const Drawer(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // DialogUtils.showInputBox(
@@ -141,6 +144,7 @@ class _HomePageState extends State<HomePage> {
                     itemCount: FirebaseClient.allUsers.length,
                     itemBuilder: (_, index) {
                       final user = snapshot.data![index];
+                      if(user.id == SharedPrefs.getString(SharedPrefsKeys.firebaseId)) return const SizedBox.shrink();
                       // final friend = friends.firstWhere(
                       //   (friend) => friend.id == users[index].id,
                       //   orElse: () => null, // returns null if no friend is found
@@ -183,7 +187,7 @@ class _HomePageState extends State<HomePage> {
   
   Future<void> addFriend(FirebaseUser firebaseUser, {bool acceptRequest = false}) async {
     FirebaseStatus status = await FirebaseClient.addFriend(firebaseUser, acceptRequest: acceptRequest);
-    InfoUtils.showSnackbar('Add Friend', status.message);
+    InfoUtils.showSnackbar(title: 'Add Friend', message: status.message);
     // saveUsers(); // Locally saving
   }
 
@@ -224,7 +228,7 @@ class FriendListTile extends StatelessWidget {
         subtitle: Text(user.username ?? ''),
         trailing: InkWell(
           onTap: () {
-            Get.back();
+            AppRouter.pop();
           },
           child: InkWell(
             onTap: onTap,

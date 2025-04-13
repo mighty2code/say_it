@@ -5,7 +5,6 @@ import 'package:say_it/data/models/firebase_status.dart';
 import 'package:say_it/data/models/firebase_user.dart';
 import 'package:say_it/data/models/friend.dart';
 import 'package:say_it/data/models/friend_request_status.dart';
-import 'package:say_it/firebase_options.dart';
 import 'package:say_it/utils/map_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -26,7 +25,7 @@ class FirebaseClient {
   }
 
   static void initSDK() async {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await Firebase.initializeApp();
   }
 
   static dispose() {}
